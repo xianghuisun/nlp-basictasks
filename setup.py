@@ -17,34 +17,36 @@
 ################################################################################
 """
 Setup script.
-Authors: sunxianghui(2357094733@qq.com)
+Authors: xianghuisun(2357094733@qq.com)
 Date:    2021/8/20 00:00:01
 """
 import setuptools
 with open("README.md", "r") as fh:
     long_description = fh.read()
 setuptools.setup(
-    name="nlp-basictask",
-    version="0.0.1",
-    author="sunxianghui",
+    name="nlp-basictasks",
+    version="0.0.4",
+    author="xianghuisun",
     author_email="2357094733@qq.com",
     description="a simple and easy-to-use NLP framework.",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/xianghuisun/nlp-basictasks",
     # packages=setuptools.find_packages(),
-    packages = ['basictasks', 
-        'basictasks.readers', 
-        'basictasks.modules', 
-        'basictasks.heads',
-        'basictasks.tasks', 
-        'basictasks.evaluation'],
-    package_dir={'basictasks':'./basictasks',
-                 'basictasks.readers':'./basictasks/readers',
-                 'basictasks.modules':'./basictasks/modules',
-                 'basictasks.heads':'./basictasks/heads',
-                 'basictasks.tasks': './basictasks/tasks',
-                 'basictasks.evaluation': './basictasks/evaluation'},
+    #packages = ['basictasks', 
+    #    'basictasks.readers', 
+    #    'basictasks.modules', 
+    #    'basictasks.heads',
+    #    'basictasks.tasks', 
+    #    'basictasks.evaluation'],
+    #package_dir={'basictasks':'./basictasks',
+    #             'basictasks.readers':'./basictasks/readers',
+    #             'basictasks.modules':'./basictasks/modules',
+    #             'basictasks.heads':'./basictasks/heads',
+    #             'basictasks.tasks': './basictasks/tasks',
+    #             'basictasks.evaluation': './basictasks/evaluation'},
+    package_dir={"": "nlp_basictasks"},
+    packages=setuptools.find_packages(where="nlp_basictasks"),
     platforms = "any",
     license='Apache 2.0',
     classifiers = [

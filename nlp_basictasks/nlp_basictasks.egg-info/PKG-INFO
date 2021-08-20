@@ -1,0 +1,24 @@
+Metadata-Version: 2.1
+Name: nlp-basictasks
+Version: 0.0.4
+Summary: a simple and easy-to-use NLP framework.
+Home-page: https://github.com/xianghuisun/nlp-basictasks
+Author: xianghuisun
+Author-email: 2357094733@qq.com
+License: Apache 2.0
+Platform: any
+Classifier: License :: OSI Approved :: Apache Software License
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.5
+Classifier: Programming Language :: Python :: 3.6
+Classifier: Programming Language :: Python :: 3.7
+Requires-Python: >=3.0
+Description-Content-Type: text/markdown
+License-File: LICENSE
+
+# nlp-basictasks
+A simple framework for building some basic NLP tasks
+
+
+
