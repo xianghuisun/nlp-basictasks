@@ -17,11 +17,26 @@ class clsEvaluator:
     It is designed for CrossEncoders with 2 or more outputs. It measure the
     accuracy of the predict class vs. the gold labels.
     """
-    def __init__(self, sentences, labels, name: str='', write_csv: bool = True):
-        #sentences可能是单句子分类，也可能是双句子
+    def __init__(self, sentences, label_ids, label2id, name: str='', write_csv: bool = True):
         self.sentences = sentences
-        self.labels = labels
+        if type(label_ids[0])==str:
+            logger.info("input label is str type, converting to id!")
+            label_ids=[label2id[label_id] for label_id in label_ids]
+        self.label_ids = label_ids
+        self.label2id=label2id
+        self.id2label={id_:tag for tag,id_ in self.label2id.items()}
+        logger.info('label2id like : {}'.format(self.label2id))
         self.name = name
+        self.label2metrics={}
+        for key in self.label2id.keys():
+            self.label2metrics[key]={'golden_num':0,'predict_num':0,'predict_correct_num':0}
+            #标签是key的真实样本的数量、预测key的数量、预测正确的样本数量
+        for tag_id in self.label_ids:
+            tag=self.id2label[tag_id]
+            self.label2metrics[tag]['golden_num']+=1
+
+        for tag in self.label2metrics.keys():
+            logger.info('The number of '+tag+' in dataset is {}'.format(self.label2metrics[tag]['golden_num']))
 
         self.csv_file = "ClsEvaluator" + ("_" + name if name else '') + "_results.csv"
         self.csv_headers = ["epoch", "steps", "Accuracy"]
@@ -29,7 +44,7 @@ class clsEvaluator:
 
         logging.info("Evalautor sentence like : \n")
         for i in range(5):
-            logging.info(self.sentences[i]+"\t"+str(self.labels[i])+"\n")
+            logging.info(self.sentences[i]+"\t"+str(self.label_ids[i])+"\n")
 
     def __call__(self, model, label2id={'0':0,'1':1}, batch_size=32, output_path: str = None, epoch: int = -1, steps: int = -1) -> float:
         '''
@@ -48,14 +63,27 @@ class clsEvaluator:
         logging.info("ClsEvaluator: Evaluating the model on " + self.name + " dataset" + out_txt)
 
         pred_scores = model.predict(is_pairs=False, dataloader=self.sentences, batch_size=batch_size)#(num_eval_examples,num_classes)
-        pred_labels = np.argmax(pred_scores, axis=1)
-        assert len(pred_labels) == len(self.labels)
-        acc = np.sum(pred_labels == self.labels) / len(self.labels)
+        pred_label_ids = np.argmax(pred_scores, axis=1)
+        assert len(pred_label_ids) == len(self.label_ids)
+        acc = np.sum(pred_label_ids == self.label_ids) / len(self.label_ids)
 
         logging.info("Accuracy: {:.3f}".format(acc))
+
+        for i,pred_tag_id in enumerate(pred_label_ids):
+            tag=self.id2label[pred_tag_id]
+            self.label2metrics[tag]['predict_num']+=1
+            if pred_tag_id==self.label_ids[i]:
+                self.label2metrics[tag]['predict_correct_num']+=1
+
+        for label,values in self.label2metrics.items():
+            precision=values['predict_correct_num']/(values['predict_num']+0.01)
+            recall=values['predict_correct_num']/(values['golden_num']+0.01)
+            f1_score=2*precision*recall/(precision+recall+0.01)
+            logger.info(label+'\t'+'precision : %f'+' recall : %f'+" f1 score : %f"%(precision,recall,f1_score))
+
         if len(label2id)==2:
             assert label2id=={"0":0,"1":1}
-            y=np.array([label2id[tag] if type(tag)==str else tag for tag in self.labels])
+            y=np.array([label2id[tag] if type(tag)==str else tag for tag in self.label_ids])
             pred=pred_scores[:,1]
             fpr, tpr, thresholds = metrics.roc_curve(y, pred, pos_label=1)
             auc_val=metrics.auc(fpr, tpr)

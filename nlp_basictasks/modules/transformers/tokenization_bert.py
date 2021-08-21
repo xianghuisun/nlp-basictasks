@@ -21,8 +21,8 @@ from __future__ import print_function
 import collections
 import unicodedata
 import os,sys
-sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
-from log import logging
+#sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+from .log import logging
 logger = logging.getLogger(__name__)
 VOCAB_NAME = 'vocab.txt'
 
@@ -72,6 +72,7 @@ class BertTokenizer(object):
             [(ids, tok) for tok, ids in self.vocab.items()])
         self.basic_tokenizer = BasicTokenizer(do_lower_case=do_lower_case)
         self.wordpiece_tokenizer = WordpieceTokenizer(vocab=self.vocab)
+        self.do_lower_case=do_lower_case
 
     def tokenize(self, text):
         split_tokens = []

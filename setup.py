@@ -25,10 +25,10 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 setuptools.setup(
     name="nlp-basictasks",
-    version="0.0.4",
+    version="0.1.0",
     author="xianghuisun",
     author_email="2357094733@qq.com",
-    description="a simple and easy-to-use NLP framework.",
+    description="a simple framework that can quickly build some basic NLP tasks",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/xianghuisun/nlp-basictasks",
@@ -45,8 +45,9 @@ setuptools.setup(
     #             'basictasks.heads':'./basictasks/heads',
     #             'basictasks.tasks': './basictasks/tasks',
     #             'basictasks.evaluation': './basictasks/evaluation'},
-    package_dir={"": "nlp_basictasks"},
-    packages=setuptools.find_packages(where="nlp_basictasks"),
+    #package_dir={"": "nlp_basictasks"},
+    #packages=setuptools.find_packages(where="nlp_basictasks"),
+    packages=setuptools.find_packages(),
     platforms = "any",
     license='Apache 2.0',
     classifiers = [
@@ -59,6 +60,11 @@ setuptools.setup(
           ],
     python_requires='>=3.0',
     install_requires = [
-        'torch'
+        'torch>=1.6.0',
+        'torchvision',
+        'tqdm',
+        'scipy',
+        'scikit-learn',
+        'seqeval'
     ]
 )

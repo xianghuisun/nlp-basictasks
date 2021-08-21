@@ -22,8 +22,8 @@ from typing import Any, Dict, Tuple
 
 WEIGHTS_NAME = "pytorch_model.bin"
 CONFIG_NAME = "config.json"
-sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
-from log import logging
+#sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+from .log import logging
 logger = logging.getLogger(__name__)
 
 class PretrainedConfig(object):

@@ -20,9 +20,9 @@ from typing import Callable, Iterable, Tuple
 import torch
 from torch.optim import Optimizer
 from torch.optim.lr_scheduler import LambdaLR
-sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+#sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
-from log import logging
+from .log import logging
 logger = logging.getLogger(__name__)
 
 

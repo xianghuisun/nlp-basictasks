@@ -39,7 +39,7 @@ class SoftmaxLossHead(nn.Module):
                  pooling_mode_mean_sqrt_len_tokens: bool = False,
                  pooling_mode_mean_last_2_tokens: bool = False,
                  pooling_mode_mean_first_last_tokens: bool = False,
-                 is_finetune=False
+                 is_finetune=False,
                  ):
         super(SoftmaxLossHead, self).__init__()
         self.num_labels = num_labels

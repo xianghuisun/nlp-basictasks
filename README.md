@@ -1,3 +1,7 @@
 # nlp-basictasks
-A simple framework for building some basic NLP tasks
+
+## 安装
+```bash
+pip install --index-url https://pypi.org/project/ nlp-basictasks==0.1.0
+```
 

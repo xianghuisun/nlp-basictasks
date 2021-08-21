@@ -1,5 +1,7 @@
 import json
 from logging import log
+from nlp_basictasks.modules.transformers.modeling_bert import BertModel
+from nlp_basictasks.modules.transformers.tokenization_bert import BertTokenizer
 import numpy as np
 import os,sys
 from typing import Dict, Sequence, Text, Type, Callable, List, Optional, Union
@@ -17,6 +19,8 @@ from log import logging
 
 from modules.utils import get_optimizer,get_scheduler
 from heads import SoftmaxLossHead
+from modules.Pooling import Pooling
+from modules.MLP import MLP
 from readers.sts import convert_examples_to_features,convert_sentences_to_features
 from .utils import batch_to_device,eval_during_training
 
@@ -33,7 +37,7 @@ class sts():
                 tensorboard_logdir = None):
         '''
         head_name用来指明使用哪一个loss，包括softmaxloss和各种基于对比学习的loss
-        head_config用来给出具体loss下所需要的参数
+        head_config用来给出具体loss下所需要的参数，
         '''
         self.head_name=head_name
         self.head_config=head_config
@@ -237,3 +241,131 @@ class sts():
                 callback(score_and_auc, epoch, steps)
             return score_and_auc
         return None
+
+
+
+class SimilarityRetrieve(nn.Module):
+    def __init__(self,bert_model_path,
+                pooling_model_path=None,
+                pooling_config={'pooling_mode_cls_token':True},
+                mlp_model_path=None,
+                max_seq_length:int = 32,
+                device:str = None):
+        '''
+        
+        '''
+        super(SimilarityRetrieve,self).__init__()
+        #logger.info("Bert model path and pooling model path is required")
+        self.max_seq_lenth=max_seq_length
+        if not os.path.exists(os.path.join(bert_model_path,'pytorch_model.bin')):
+            raise Exception('Not found pytorch_model.bin in bert model path : {}'.format(bert_model_path))
+        else:
+            assert os.path.exists(os.path.join(bert_model_path,'config.json'))
+            self.bert=BertModel.from_pretrained(bert_model_path)
+            self.tokenizer=BertTokenizer.from_pretrained(bert_model_path)
+            pooling_config.update({'word_embedding_dimension':self.bert.config.hidden_size})
+        
+        if pooling_model_path==None or not os.path.exists(os.path.join(pooling_model_path,'config.json')):
+            self.pooling=Pooling(**pooling_config)
+        else:
+            self.pooling=Pooling.load(pooling_model_path)
+        
+        if mlp_model_path is not None:
+            logger.info("The MLP model path is not empty, which means you will project the vector after pooling")
+            if not os.path.exists(os.path.join(mlp_model_path,'pytorch_model.bin')):
+                raise Exception('Not found pytorch_model.bin in MLP model path : {}'.format(mlp_model_path))
+            else:
+                assert os.path.exists(os.path.join(mlp_model_path,'config.json'))
+                self.mlp=MLP.load(mlp_model_path)
+
+        if device is None:
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+            logger.info("Use pytorch device: {}".format(device))
+        self._target_device=device
+        self.to(device)
+
+    def smart_batching_collate(self,batch):
+        features_of_a,features_of_b,labels=convert_examples_to_features(examples=batch,tokenizer=self.model.tokenizer,max_seq_len=self.max_seq_lenth)
+        return features_of_a,features_of_b,labels
+
+    def encode(self, sentences,
+               batch_size: int = 32,
+               show_progress_bar: bool = None,
+               output_value: str = 'sentence_embedding',
+               convert_to_numpy: bool = True,
+               convert_to_tensor: bool = False,
+               device: str = None,
+               normalize_embeddings: bool = False,
+               output_all_encoded_layers=False):
+        '''
+        传进来的sentences只能是single_batch
+        '''
+        self.eval()
+        input_is_string=False
+        if type(sentences)==str:
+            input_is_string=True
+            sentences=[sentences]
+        if convert_to_tensor:
+            convert_to_numpy = False
+        if device is None:
+            device = self._target_device
+
+        all_embeddings = []
+        length_sorted_idx = np.argsort([-len(sen) for sen in sentences])
+        sentences_sorted = [sentences[idx] for idx in length_sorted_idx]
+        for start_index in trange(0, len(sentences), batch_size, desc="Batches", disable=not show_progress_bar):
+            sentences_batch = sentences_sorted[start_index:start_index+batch_size]
+            features=convert_sentences_to_features(sentences_batch,tokenizer=self.tokenizer)
+            features=batch_to_device(features,device)
+            with torch.no_grad():
+                embeddings=self.encoding_feature_to_embedding(sentence_features=features,output_all_encoded_layers=output_all_encoded_layers)
+                embeddings=embeddings.detach()
+                if normalize_embeddings:
+                    embeddings = torch.nn.functional.normalize(embeddings, p=2, dim=1)
+                    if convert_to_numpy:
+                        embeddings = embeddings.cpu()
+                all_embeddings.extend(embeddings)
+        
+        all_embeddings = [all_embeddings[idx] for idx in np.argsort(length_sorted_idx)]
+        if convert_to_tensor:
+            all_embeddings = torch.stack(all_embeddings)
+        elif convert_to_numpy:
+            all_embeddings = np.asarray([emb.numpy() for emb in all_embeddings])
+
+        if input_is_string:
+            all_embeddings = all_embeddings[0]#一个hidden_size维度的vector
+
+        return all_embeddings
+
+    def encoding_feature_to_embedding(self,sentence_features,output_all_encoded_layers=False):
+        '''
+        each_features like : {'input_ids':tensor,'attention_mask':tensor,'token_type_ids':tensor},
+        input_ids.size()==attention_mask.size()==token_type_ids.size()==position_ids.size()==(batch_size,seq_length)
+        label_ids.size()==(batch_size,)
+        '''
+        #只有在encode模式下的single_batch才是有意义的，不然如果不是encode模式，只传入一个句子，有没有标签，无法返回任何值
+        batch_size,seq_len_1=sentence_features['input_ids'].size()
+
+        input_ids=sentence_features['input_ids']
+        token_type_ids=sentence_features['token_type_ids']
+        attention_mask=sentence_features['attention_mask']
+
+        (sequence_outputs,pooler_output)=self.bert(input_ids=input_ids,
+                                                token_type_ids=token_type_ids,
+                                                attention_mask=attention_mask,
+                                                output_all_encoded_layers=output_all_encoded_layers)
+        #要注意到sequence_output[0]与pooled_output的区别在于pooler_output是经过一层tanh的
+        if output_all_encoded_layers:
+            all_layer_embeddings=sequence_outputs
+            token_embeddings=sequence_outputs[-1]
+        else:
+            all_layer_embeddings=None
+            token_embeddings=sequence_outputs
+
+        cls_token_embeddings=pooler_output
+        sentence_embedding=self.pooling(token_embeddings=token_embeddings,
+                                            cls_token_embeddings=cls_token_embeddings,
+                                            attention_mask=attention_mask,
+                                            all_layer_embeddings=all_layer_embeddings)
+        assert sentence_embedding.size()==(batch_size,self.pooling.pooling_output_dimension)
+        return sentence_embedding

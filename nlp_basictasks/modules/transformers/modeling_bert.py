@@ -30,8 +30,8 @@ import shutil
 import torch
 from torch import nn
 from .configuration_bert import BertConfig
-sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
-from log import logging
+#sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+from .log import logging
 logger = logging.getLogger(__name__)
 #logger.info("加载BERT模型")
 
