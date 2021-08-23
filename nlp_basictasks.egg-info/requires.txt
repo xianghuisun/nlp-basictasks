@@ -4,3 +4,4 @@ tqdm
 scipy
 scikit-learn
 seqeval
+pandas

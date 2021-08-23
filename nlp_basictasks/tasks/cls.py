@@ -52,6 +52,7 @@ class cls():
                             state_dict=state_dict,
                             is_finetune=is_finetune)
         if tensorboard_logdir!=None:
+            os.makedirs(tensorboard_logdir,exist_ok=True)
             self.tensorboard_writer=SummaryWriter(tensorboard_logdir)
         else:
             self.tensorboard_writer=None

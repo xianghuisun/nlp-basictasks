@@ -247,7 +247,7 @@ class sts():
 class SimilarityRetrieve(nn.Module):
     def __init__(self,bert_model_path,
                 pooling_model_path=None,
-                pooling_config={'pooling_mode_cls_token':True},
+                pooling_config={'pooling_mode_mean_tokens':True},
                 mlp_model_path=None,
                 max_seq_length:int = 32,
                 device:str = None):
@@ -290,7 +290,7 @@ class SimilarityRetrieve(nn.Module):
 
     def encode(self, sentences,
                batch_size: int = 32,
-               show_progress_bar: bool = None,
+               show_progress_bar: bool = True,
                output_value: str = 'sentence_embedding',
                convert_to_numpy: bool = True,
                convert_to_tensor: bool = False,

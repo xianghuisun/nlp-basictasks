@@ -79,8 +79,11 @@ class clsEvaluator:
             precision=values['predict_correct_num']/(values['predict_num']+0.01)
             recall=values['predict_correct_num']/(values['golden_num']+0.01)
             f1_score=2*precision*recall/(precision+recall+0.01)
-            logger.info(label+'\t'+'precision : %f'+' recall : %f'+" f1 score : %f"%(precision,recall,f1_score))
-
+            logger.info(label+'\t'+"precision : %f, recall : %f,  f1 score : %f"%(precision,recall,f1_score))
+            self.label2metrics[label]['predict_correct_num']=0
+            self.label2metrics[label]['predict_num']=0
+            #不归0就变成累加了
+        
         if len(label2id)==2:
             assert label2id=={"0":0,"1":1}
             y=np.array([label2id[tag] if type(tag)==str else tag for tag in self.label_ids])

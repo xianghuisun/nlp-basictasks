@@ -2,9 +2,13 @@ import torch
 from torch import Tensor
 from torch import nn
 from typing import Union, Tuple, List, Iterable, Dict
-import os
+import os,sys
 import json
 
+sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+
+from log import logging
+logger=logging.getLogger(__name__)
 
 class Pooling(nn.Module):
     """
@@ -44,6 +48,8 @@ class Pooling(nn.Module):
         pooling_mode_multiplier = sum([pooling_mode_cls_token, pooling_mode_max_tokens, pooling_mode_mean_tokens,
                                        pooling_mode_mean_sqrt_len_tokens, pooling_mode_mean_last_2_tokens,pooling_mode_mean_first_last_tokens])
         self.pooling_output_dimension = (pooling_mode_multiplier * word_embedding_dimension)
+        logger.info("Pooling config : {}".format(self.get_config_dict()))
+        logger.info("Pooling output dimension is {}".format(self.pooling_output_dimension))
 
     def forward(self, token_embeddings, cls_token_embeddings, attention_mask, all_layer_embeddings=None, token_weights_sum=None):
         '''
@@ -128,5 +134,5 @@ class Pooling(nn.Module):
     def load(input_path):
         with open(os.path.join(input_path, 'config.json')) as fIn:
             config = json.load(fIn)
-
+        logger.info("Pooling config : ",config)
         return Pooling(**config)

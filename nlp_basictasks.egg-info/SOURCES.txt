@@ -44,3 +44,6 @@ nlp_basictasks/tasks/cls.py
 nlp_basictasks/tasks/ner.py
 nlp_basictasks/tasks/sts.py
 nlp_basictasks/tasks/utils.py
+webservices/__init__.py
+webservices/log.py
+webservices/sts_retrieve.py
