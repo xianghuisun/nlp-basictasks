@@ -34,16 +34,13 @@ class Ner():
                 batch_first=True):
 
         if label2id is None:
-            assert os.path.exists(os.path.join(model_path,'label2id.json'))
+            try:
+                assert os.path.exists(os.path.join(model_path,'label2id.json'))
+            except:
+                logger.info("There is no label2id provided and the path {} not contains label2id ".format(model_path))
             with open(os.path.join(model_path,'label2id.json')) as f:
                 label2id=json.load(f)
             logger.info("Load label2id from {}".format(os.path.join(model_path,'label2id.json')))
-        else:
-            if not os.path.exists(os.path.join(model_path,"label2id.json")):
-                with open(os.path.join(model_path,"label2id.json"),'w') as f:
-                    json.dump(label2id,fp=f)#及时保存label2id
-            logger.info('label2id has been saved in {}'.format(os.path.join(model_path,'label2id.json')))
-
 
         self.label2id=label2id
         self.use_crf=use_crf
@@ -151,6 +148,12 @@ class Ner():
             print_loss_step: Optional[int] = None,
             output_all_encoded_layers: bool = False
             ):
+
+        if not os.path.exists(os.path.join(output_path,"label2id.json")):
+            with open(os.path.join(output_path,"label2id.json"),'w') as f:
+                json.dump(self.label2id,fp=f)#及时保存label2id
+        logger.info('label2id has been saved in {}'.format(os.path.join(output_path,'label2id.json')))
+        #将label2id与模型文件保存在一起，方便测试
         train_dataloader.collate_fn=self.smart_batching_collate
 
         if print_loss_step==None:

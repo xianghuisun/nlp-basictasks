@@ -198,7 +198,7 @@ def convert_examples_to_features(examples, tokenizer, max_seq_len, label2id):
     features = []
     labels=[]
     special_token_nums=2#[CLS],[SEP]
-    assert isinstance(examples[0],InputExample)#强制要求传进来的examples的element必须是InputExample类型
+    #assert isinstance(examples[0],InputExample)#强制要求传进来的examples的element必须是InputExample类型
 
     max_len_this_batch=0
     for example in examples:

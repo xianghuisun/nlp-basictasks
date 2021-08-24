@@ -57,6 +57,7 @@ class RetrieveModel:
         self.index=None
         self.is_IVF=False#is_IVF用来指示当前索引的类型是否是IVFFlat类型
         self.query2id={}
+        self.id2query = {id_:query for query,id_ in self.query2id.items()}
         self.query_num=len(self.query2id)
         self.save_index_path=save_index_path
         self.save_query2id_path=save_query2id_path
@@ -116,8 +117,8 @@ class RetrieveModel:
                         nprobe=10):
         self.query2id=self.create_query2id(sentences)
         self.query_num=len(self.query2id)
-        if self.query_num<=1:
-            raise Exception('The number of sentences only has {}, is too less to create index'.format(self.query_num))
+        if self.query_num<=0:
+            raise Exception('The number of sentences is {}, can not create index'.format(self.query_num))
         with open(self.save_query2id_path,'w',encoding='utf-8') as f:
             json.dump(obj=self.query2id,fp=f,ensure_ascii=False)
         logger.info('query2id has been created and saved in {}, which has {} sentences'.format(self.save_query2id_path,self.query_num))
