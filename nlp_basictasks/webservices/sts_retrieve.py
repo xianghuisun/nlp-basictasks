@@ -116,6 +116,7 @@ class RetrieveModel:
                         nlist=100,
                         nprobe=10):
         self.query2id=self.create_query2id(sentences)
+        self.id2query = {id_:query for query,id_ in self.query2id.items()}
         self.query_num=len(self.query2id)
         if self.query_num<=0:
             raise Exception('The number of sentences is {}, can not create index'.format(self.query_num))

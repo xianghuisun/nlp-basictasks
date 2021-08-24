@@ -82,7 +82,7 @@ class SoftmaxLossHead(nn.Module):
         
         #logger.info("Pooling config : {}".format(self.pooling_config))
         logger.info("Softmax loss: #Vectors concatenated: {}".format(self.num_vectors_concatenated))
-        logger.info("Pooling policy is ")
+        #logger.info("Pooling policy is ")
         logger.info("After pooling, each sentence embedding has dim: {}".format(self.pooling_layer.pooling_output_dimension))
     def load_huggingface_model(self,bert_model_path):
         self.config=BertConfig.from_pretrained(bert_model_path)
