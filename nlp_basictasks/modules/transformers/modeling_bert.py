@@ -560,7 +560,14 @@ class BertModel(BertPreTrainedModel):
         self.pooler = BertPooler(config)
         self.apply(self.init_bert_weights)
 
-    def forward(self, input_ids, token_type_ids=None, attention_mask=None, output_all_encoded_layers=True):
+    def get_most_recent_embedding(self):
+        return self._most_recent_embedding_output
+
+    def get_embedding_output(self,input_ids, token_type_ids=None):
+        embedding_output = self.embeddings(input_ids, token_type_ids)
+        return embedding_output
+
+    def forward(self, input_ids, token_type_ids=None, attention_mask=None, output_all_encoded_layers=True, embedding_for_adv=None):
         if attention_mask is None:
             attention_mask = torch.ones_like(input_ids)
         if token_type_ids is None:
@@ -581,10 +588,17 @@ class BertModel(BertPreTrainedModel):
         extended_attention_mask = extended_attention_mask.to(dtype=next(self.parameters()).dtype) # fp16 compatibility
         extended_attention_mask = (1.0 - extended_attention_mask) * -10000.0
 
-        embedding_output = self.embeddings(input_ids, token_type_ids)
+        if embedding_for_adv is None:
+            embedding_output = self.embeddings(input_ids, token_type_ids)
+        else:
+            embedding_output=embedding_for_adv
+        self._most_recent_embedding_output=embedding_output
+
         encoded_layers = self.encoder(embedding_output,
                                       extended_attention_mask,
                                       output_all_encoded_layers=output_all_encoded_layers)
+        #如果输出所有层的hidden_states，那么此时encoded_layers就是长度为12/13的list
+        #否则encoded_layers就是长度为1的list
         sequence_output = encoded_layers[-1]
         pooled_output = self.pooler(sequence_output)
         if not output_all_encoded_layers:

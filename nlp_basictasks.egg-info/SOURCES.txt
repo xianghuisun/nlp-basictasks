@@ -10,11 +10,13 @@ nlp_basictasks.egg-info/dependency_links.txt
 nlp_basictasks.egg-info/requires.txt
 nlp_basictasks.egg-info/top_level.txt
 nlp_basictasks/evaluation/__init__.py
+nlp_basictasks/evaluation/attackEvaluator.py
 nlp_basictasks/evaluation/clsEvaluator.py
 nlp_basictasks/evaluation/nerEvaluator.py
 nlp_basictasks/evaluation/pairclsEvaluator.py
 nlp_basictasks/evaluation/stsEvaluator.py
 nlp_basictasks/heads/__init__.py
+nlp_basictasks/heads/attack_for_cls.py
 nlp_basictasks/heads/base_head.py
 nlp_basictasks/heads/cls.py
 nlp_basictasks/heads/cluster.py

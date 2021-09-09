@@ -33,7 +33,9 @@ class cls():
                 device:str = None,
                 state_dict=None,
                 is_finetune=False,
-                tensorboard_logdir = None):
+                tensorboard_logdir = None,
+                pooling_type='cls',
+                do_FGV=False):
 
         if is_finetune:
             logger.info("Model has been finetuned, so the label2id must be saved in {}".format(os.path.join(model_path,'label2id.json')))
@@ -43,14 +45,18 @@ class cls():
             assert label2id is not None
 
         self.label2id=label2id
+        self.do_FGV=do_FGV
         self.num_labels=len(label2id)
         self.max_seq_lenth=max_seq_length
+        self.pooling_type=pooling_type
         logger.info("The label2id is\n {}".format(json.dumps(self.label2id,ensure_ascii=False)))
-
+        logger.info("Pooling type is {} for classification task.".format(self.pooling_type))
+        logger.info("Doing attack traing : {}".format(do_FGV))
         self.model=ClsHead(model_path=model_path,
                             num_labels=self.num_labels,
                             state_dict=state_dict,
-                            is_finetune=is_finetune)
+                            is_finetune=is_finetune,
+                            pooling_type=pooling_type)
         if tensorboard_logdir!=None:
             os.makedirs(tensorboard_logdir,exist_ok=True)
             self.tensorboard_writer=SummaryWriter(tensorboard_logdir)
@@ -70,7 +76,60 @@ class cls():
     def smart_batching_collate_of_pair(self,batch):
         features,labels=pair_cls.convert_examples_to_features(examples=batch,tokenizer=self.model.tokenizer,max_seq_len=self.max_seq_lenth)
         return features,labels
-    
+
+    def getLoss(self,features,labels,loss_fct,eps=1e-10,noise_coeff=0.01):
+        '''
+        eps和noise_coeff是做对抗时用到的
+        PyTorch一些函数说明：
+        Tensor.grad 首先tensor的梯度在forward阶段存储的是None,当调用backward()时，tensor.grad将会存储
+        自身在计算图中的梯度。如果不进行清零，那么下一个batch的backward()计算的梯度将会进行累加
+        detach_，a.detach_()操作会使得a变成叶子节点，从计算图中分离出来，a之前的计算图将不被传回梯度
+        也就是a阻断了a之前的计算图，a变成了叶子节点，不过a同样不会被更新。
+
+        对抗训练的流程是，前向计算得到normal_loss,然后调用backward得到embedding的梯度，取出embedding的梯度
+        计算扰动，将扰动重新输入到模型中得到adv_loss。
+        流程中需要注意的事项包括：1) normal_loss.backward()之前，需要指明embedding.retain_grad=True
+        2) 对抗的扰动取自embedding.grad，不过embedding并不能作为对抗阶段计算图的一部分，而且扰动也不需要更新，所以
+        一定要有：embedding.grad.detach_()
+        3) 扰动的前向计算时，需要便利当前model的每一个参数，如果该参数的梯度不空，那么清空该参数的梯度，不然就会和
+        对抗阶段的参数梯度出现累计
+        '''
+        if self.do_FGV==False:
+            logits=self.model(**features)
+            loss_value = loss_fct(logits, labels)
+        else:
+            ###########################################正常的前向计算##############################
+            logits=self.model(**features)
+            current_word_embedding=self.model.bert.get_most_recent_embedding()#(bsz,seq_len,dim)
+            current_word_embedding.retain_grad()#如果想要保存非叶子节点的grad，需要指明retain_grad
+            normal_loss = loss_fct(logits, labels)
+            normal_loss.backward(retain_graph=True)
+            ###########################################对抗阶段###################################
+            unnormalized_noise=current_word_embedding.grad.detach_()#如果没有指明retain_grad(),那么此时的梯度是None
+            #unnormalized_noise.required_grad=False，将current_word_embedding从对抗阶段的计算图中分离出来
+            normalized_noise=unnormalized_noise/(unnormalized_noise.norm(p=2,dim=-1).unsqueeze(dim=-1)+eps)#x/||x||
+            #unnormalized_noise只是noise,unnormalized_noise作为对抗阶段的叶子节点，是不需要更新的，这和normal阶段的
+            #emmbedding是不同的，normal阶段的embedding需要更新，我们只需要更新的是网络参数，使得网络参数
+            #对扰动鲁棒，而扰动当然是不需要更新的，即使它是从embedding的梯度得到的
+            for p in self.model.parameters():
+                if p.grad is not None:
+                    p.grad.detach_()
+                    p.grad.zero_()#已经得到了noise,所以其余的节点的梯度都可以清零
+                    #比避免loss_value调用backward时出现梯度累计
+
+            adv=noise_coeff*normalized_noise
+            #接下来就是把扰动添加到word_embedding上
+            adv_embedding=current_word_embedding+adv
+            #将adv_embedding视为新的embedding重新过12层BERT
+            
+            features.update({'embedding_for_adv':adv_embedding})
+            adv_logits=self.model(**features)
+            adv_loss=loss_fct(adv_logits,labels)
+
+            loss_value=(adv_loss+normal_loss)/2
+
+        return loss_value
+
     def fit(self,
             is_pairs,
             train_dataloader,
@@ -93,7 +152,11 @@ class cls():
             print_loss_step: Optional[int] = None,
             output_all_encoded_layers: bool = False
             ):
+
+        if self.pooling_type not in ['cls','last_layer']:
+            output_all_encoded_layers=True
         if not os.path.exists(os.path.join(output_path,"label2id.json")):
+            os.makedirs(output_path,exist_ok=True)
             with open(os.path.join(output_path,"label2id.json"),'w') as f:
                 json.dump(self.label2id,fp=f)#及时保存label2id
             logger.info("label2id has been saved in {}".format(os.path.join(output_path,"label2id.json")))
@@ -146,8 +209,7 @@ class cls():
                 #print(features.keys(),features["input_ids"].size())
                 if use_amp:
                     with autocast():
-                        logits=self.model(**features)
-                        loss_value = loss_fct(logits, labels)
+                        loss_value=self.getLoss(features=features,labels=labels,loss_fct=loss_fct)
 
                     scale_before_step = scaler.get_scale()
                     scaler.scale(loss_value).backward()
@@ -158,8 +220,7 @@ class cls():
 
                     skip_scheduler = scaler.get_scale() != scale_before_step
                 else:
-                    logits=self.model(**features)
-                    loss_value=loss_fct(logits,labels)#CrossEntropyLoss
+                    loss_value=self.getLoss(features=features,labels=labels,loss_fct=loss_fct)
                     training_loss+=loss_value.item()
                     if print_loss_step!=None and train_step>0 and train_step%print_loss_step == 0:
                         training_loss/=print_loss_step
@@ -214,6 +275,9 @@ class cls():
                 convert_to_tensor: bool = False,
                 output_all_encoded_layers = False,
                 show_progress_bar=False):
+        if self.pooling_type not in ['cls','last_layer']:
+            output_all_encoded_layers=True
+
         if isinstance(dataloader,list):
             #传进来的dataloader是一个List
             dataloader=DataLoader(dataloader,batch_size=batch_size,num_workers=num_workers,shuffle=False)
