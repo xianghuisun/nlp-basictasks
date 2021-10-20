@@ -2,6 +2,7 @@ LICENSE
 README.md
 pyproject.toml
 setup.py
+nlp_basictasks/Trainer.py
 nlp_basictasks/__init__.py
 nlp_basictasks/log.py
 nlp_basictasks.egg-info/PKG-INFO
@@ -20,12 +21,15 @@ nlp_basictasks/heads/attack_for_cls.py
 nlp_basictasks/heads/base_head.py
 nlp_basictasks/heads/cls.py
 nlp_basictasks/heads/cluster.py
+nlp_basictasks/heads/mrc.py
 nlp_basictasks/heads/ner.py
 nlp_basictasks/heads/sts.py
 nlp_basictasks/heads/utils.py
+nlp_basictasks/modules/BERT.py
 nlp_basictasks/modules/LSTM.py
 nlp_basictasks/modules/MLP.py
 nlp_basictasks/modules/Pooling.py
+nlp_basictasks/modules/SBERT.py
 nlp_basictasks/modules/__init__.py
 nlp_basictasks/modules/utils.py
 nlp_basictasks/modules/transformers/__init__.py
@@ -38,11 +42,13 @@ nlp_basictasks/readers/__init__.py
 nlp_basictasks/readers/base_reader.py
 nlp_basictasks/readers/cls.py
 nlp_basictasks/readers/cluster.py
+nlp_basictasks/readers/mrc.py
 nlp_basictasks/readers/ner.py
 nlp_basictasks/readers/paircls.py
 nlp_basictasks/readers/sts.py
 nlp_basictasks/tasks/__init__.py
 nlp_basictasks/tasks/cls.py
+nlp_basictasks/tasks/mrc.py
 nlp_basictasks/tasks/ner.py
 nlp_basictasks/tasks/sts.py
 nlp_basictasks/tasks/utils.py

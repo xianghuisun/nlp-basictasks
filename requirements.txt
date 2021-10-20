@@ -1,1 +1,8 @@
-torch>=1.0.0
+sentence-transformers==1.1.1
+jieba
+tqdm
+seqeval
+scikit-learn
+scipy
+pandas
+tensorboardX

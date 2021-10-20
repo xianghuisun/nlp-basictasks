@@ -25,7 +25,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 setuptools.setup(
     name="nlp-basictasks",
-    version="0.2.0",
+    version="0.2.2",
     author="xianghuisun",
     author_email="2357094733@qq.com",
     description="a simple framework that can quickly build some basic NLP tasks",
