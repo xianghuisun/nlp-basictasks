@@ -283,7 +283,7 @@ class NerHead(nn.Module):
         self.bert=BertModel.from_pretrained(bert_model_path)
         self.tokenizer=BertTokenizer.from_pretrained(bert_model_path)
         if self.use_bilstm:
-            self.lstmLayer=LSTMLayer(input_size=self.config.hidden_size,hidden_size=self.config.hidden_size,num_layers=1,batch_first=True,bidirectional=True)
+            self.lstmLayer=LSTM(input_size=self.config.hidden_size,hidden_size=self.config.hidden_size,num_layers=1,batch_first=True,bidirectional=True)
             self.outputLayer=MLP(in_features=self.config.hidden_size*2,out_features=self.num_labels,bias=True)
         else:
             self.outputLayer=MLP(in_features=self.config.hidden_size,out_features=self.num_labels,bias=True)
@@ -298,7 +298,7 @@ class NerHead(nn.Module):
 
         if self.use_bilstm:
             bistm_save_path=os.path.join(model_path,'BiLSTM')
-            self.lstmLayer=LSTMLayer.load(bistm_save_path)
+            self.lstmLayer=LSTM.load(bistm_save_path)
             self.outputLayer=MLP.load(os.path.join(model_path,'BiLSTM','MLP'))
         else:
             head_save_path=os.path.join(model_path,'MLP')
