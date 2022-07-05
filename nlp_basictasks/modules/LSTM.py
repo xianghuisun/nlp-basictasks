@@ -36,7 +36,7 @@ class LSTM(nn.Module):
                                 bidirectional=self.bidirectional)
 
     def forward(self, sequence_output, attention_mask):
-        input_lengths=attention_mask.sum(1)
+        input_lengths=attention_mask.sum(1).cpu()
         packed_inputs_of_lstm=torch.nn.utils.rnn.pack_padded_sequence(input=sequence_output,lengths=input_lengths,batch_first=self.batch_first,enforce_sorted=False)
         sequence_output,_=self.lstmLayer(packed_inputs_of_lstm)
         sequence_output,_=torch.nn.utils.rnn.pad_packed_sequence(sequence_output,batch_first=self.batch_first)
