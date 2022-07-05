@@ -17,7 +17,7 @@ nlp-basictasks是利用[PyTorch](https://pytorch.org/get-started/locally/)深度
 ## 安装
 
 ```bash
-pip install --index-url https://pypi.org/project/ nlp-basictasks==0.2.3
+pip install --index-url https://pypi.org/project/ nlp-basictasks==0.2.4
 ```
 
 or
